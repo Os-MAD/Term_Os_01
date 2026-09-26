@@ -1,3 +1,4 @@
+import java.util.concurrent.BlockingQueue;
 /**
  * รับงานจาก JobGenerator แล้วจัดเข้า Ready Queue
  *
@@ -13,20 +14,44 @@
  */
 public class Scheduler extends Thread {
 
+    private final BlockingQueue<Job> schedulerQueue;
+    private final ReadyQueue readyQueue;
+    private final ProjectLogger logger;
+
     // TODO: เก็บช่องทางรับงานจาก JobGenerator, ReadyQueue ปลายทาง และ logger
     //
     // หมายเหตุ: constructor ด้านล่างยังไม่มี parameter สำหรับ "ช่องทางรับงาน"
     // ให้เพิ่มเข้าไปให้ตรงกับที่ออกแบบไว้ใน JobGenerator
     // เพิ่ม parameter ได้ แต่อย่าเปลี่ยนชื่อคลาส
 
-    public Scheduler(ReadyQueue readyQueue, ProjectLogger logger) {
+    public Scheduler(BlockingQueue<Job> schedularQueue, ReadyQueue readyQueue, ProjectLogger logger) {
         super("scheduler");
         // TODO
-        throw new UnsupportedOperationException("TODO: Scheduler constructor");
+        this.schedulerQueue = schedulerQueue;
+        this.readyQueue = readyQueue;
+        this.logger = logger;
+        
     }
 
     @Override
     public void run() {
         // TODO: วนรับงานเข้ามาแล้วใส่ ReadyQueue จนกว่าจะได้รับสัญญาณให้หยุด
+        try {
+            while(true){
+                //รับ job จาก generator
+                job job = schedulerQueue.take();
+
+                //จบแล้วให้ schedular หยุด
+                if(job == JobGenerator.POISON_PILL){
+                    break;
+                }
+
+                //ส่ง job เข้า Rdy queue
+                readyQueue.add(job);
+            }
+
+        } catch (InterruptedException e){
+            Thread.currentThread().interrupt();
+        }
     }
 }
