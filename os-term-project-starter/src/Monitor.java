@@ -23,16 +23,46 @@ public class Monitor extends Thread {
     // หมายเหตุ: constructor ด้านล่างยังไม่มีทางเข้าถึงตัวนับ running
     // เพราะยังไม่มีการตัดสินว่าตัวนับนั้นควรอยู่ที่ไหน ให้เพิ่ม parameter
     // เข้าไปเองเมื่อออกแบบเสร็จ
+    private final ReadyQueue readyQueue;
+    private final ResourceManager resources;
+    private final Statistics statistics;
+    private final ProjectLogger logger;
+
+
+    // ใช้เป็นสัญญาณให้ Monitor หยุด 
+    private volatile boolean running = true;
 
     public Monitor(ReadyQueue readyQueue, ResourceManager resources,
                    Statistics statistics, ProjectLogger logger) {
         super("monitor");
         // TODO
-        throw new UnsupportedOperationException("TODO: Monitor constructor");
+        this.readyQueue = readyQueue;
+        this.resources = resources;
+        this.statistics = statistics;
+        this.logger = logger;
     }
 
     @Override
     public void run() {
         // TODO: วนรายงานสถานะทุก ~1000 ms จนกว่าจะได้รับสัญญาณให้หยุด
+        while (running) {
+            try {
+                // อ่านจำนวน Job ใน ready queue
+                 int ready = readyQueue.size();
+                // อ่านจำนวน worker ที่กำลังทำงาน
+                 int runningJobs = 0;
+                // อ่านจำนวนJob ที่ทำเสร็จแล้ว
+                 int completed = 0;
+                 // ส่งข้แมูลให้ logger
+                 Thread.sleep(1000);
+            }catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+    }
+}
+    public void shutdown(){
+        running = false;
+        interrupt();
     }
 }
