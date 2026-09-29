@@ -1,3 +1,5 @@
+import java.util.concurrent.Semaphore;
+
 /**
  * ควบคุมสิทธิ์การใช้ทรัพยากรร่วมของทั้งระบบ
  *
@@ -18,23 +20,41 @@
  */
 public class ResourceManager {
 
-    // TODO: เก็บ Semaphore ของ PRINTER และ DATABASE
+    // เก็บ Semaphore ของ PRINTER และ DATABASE โดยใช้ final เพื่อความเสถียร (Thread-safe)
+    private final Semaphore printerSemaphore;
+    private final Semaphore databaseSemaphore;
+    
+    // เก็บจำนวน permit รวมทั้งหมดไว้สำหรับคำนวณสถานะ (status)
+    private final int totalPrinterPermits;
+    private final int totalDatabasePermits;
 
     public ResourceManager(int printerPermits, int databasePermits) {
-        // TODO
-        throw new UnsupportedOperationException("TODO: ResourceManager constructor");
+        // สร้าง Semaphore แบบ fair = true ตามที่ส่วนบังคับของโจทย์กำหนด
+        this.printerSemaphore = new Semaphore(printerPermits, true);
+        this.databaseSemaphore = new Semaphore(databasePermits, true);
+        
+        this.totalPrinterPermits = printerPermits;
+        this.totalDatabasePermits = databasePermits;
     }
 
     /** ขอสิทธิ์ใช้ทรัพยากร จะรอจนกว่าจะได้ */
     public void acquire(ResourceType type) throws InterruptedException {
-        // TODO
-        throw new UnsupportedOperationException("TODO: ResourceManager.acquire");
+        if (type == ResourceType.PRINTER) {
+            printerSemaphore.acquire();
+        } else if (type == ResourceType.DATABASE) {
+            databaseSemaphore.acquire();
+        }
+        // หากเป็น ResourceType.NONE ไม่ต้องทำการขอ Semaphore ใดๆ
     }
 
     /** คืนสิทธิ์ใช้ทรัพยากร */
     public void release(ResourceType type) {
-        // TODO
-        throw new UnsupportedOperationException("TODO: ResourceManager.release");
+        if (type == ResourceType.PRINTER) {
+            printerSemaphore.release();
+        } else if (type == ResourceType.DATABASE) {
+            databaseSemaphore.release();
+        }
+        // หากเป็น ResourceType.NONE ไม่ต้องทำการคืน Semaphore ใดๆ
     }
 
     /**
@@ -42,7 +62,11 @@ public class ResourceManager {
      * เช่น "printer=1/1 database=0/2"
      */
     public String status() {
-        // TODO
-        throw new UnsupportedOperationException("TODO: ResourceManager.status");
+        // คำนวณจำนวนที่ถูกใช้งาน = จำนวนทั้งหมด - จำนวนที่ว่างอยู่ (available)
+        int printerUsed = totalPrinterPermits - printerSemaphore.availablePermits();
+        int databaseUsed = totalDatabasePermits - databaseSemaphore.availablePermits();
+        
+        return "printer=" + printerUsed + "/" + totalPrinterPermits + 
+               " database=" + databaseUsed + "/" + totalDatabasePermits;
     }
 }
