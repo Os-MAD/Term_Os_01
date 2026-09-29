@@ -29,7 +29,7 @@ public class Statistics {
     }
 
     public void recordCompletion(Job job) {
-        
+        /// อย่าลืมใช้ SYNCHROZATION ไม่งั้นจะเกิด RACE CONDITIONNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
         running.decrementAndGet();
         completed.incrementAndGet();    
         
