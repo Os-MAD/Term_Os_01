@@ -46,13 +46,24 @@ public class Main {
 
         // ---------- 3. สร้างส่วนประกอบของระบบ ----------
         // TODO: สร้าง ResourceManager จากจำนวน permit ใน config
+        ResourceManager resourceManager = new ResourceManager(config.printerPermits,config.databasePermits);
         // TODO: สร้าง ReadyQueue ตามนโยบายใน config
+        ReadyQueue readyQueue = new ReadyQueue(config.policy);
         // TODO: สร้าง Statistics
+        Statistics statistics = new Statistics();
 
         // ---------- 4. สร้างและเริ่ม Thread ----------
         // TODO: สร้าง Worker จำนวน config.workers ตัว แล้ว start
+        Thread[] workers = new Thread[config.workers];
+        for(int i=0;i<=config.workers;i++){
+            String workerName = "Worker-" + (i + 1);
+            Worker worker = new Worker(workerName, readyQueue, resourceManager, statistics, logger);
+            Thread thread = new Thread(worker);
+            workers[i] = thread;
+            workers[i].start();
+        }
         // TODO: สร้างและ start Scheduler
-        // TODO: สร้างและ start Monitor  
+        // TODO: สร้างและ start Monitor
         // TODO: สร้างและ start JobGenerator
         //
         // ลำดับการ start มีผลหรือไม่ ให้คิดและอธิบายได้ใน Demo
