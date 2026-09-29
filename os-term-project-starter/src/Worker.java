@@ -20,22 +20,36 @@
 public class Worker extends Thread {
 
     // TODO: เก็บ ReadyQueue, ResourceManager, Statistics และ logger
+    String name;
+    ReadyQueue readyQueue;
+    ResourceManager resources;
+    Statistics statistics;
+    ProjectLogger logger;
 
     public Worker(String name, ReadyQueue readyQueue, ResourceManager resources,
                   Statistics statistics, ProjectLogger logger) {
         super(name);
         // TODO
-        throw new UnsupportedOperationException("TODO: Worker constructor");
+        this.name = name;
+        this.readyQueue = readyQueue;
+        this.resources = resources;
+        this.statistics = statistics;
+        this.logger = logger;
     }
 
     @Override
     public void run() {
         // TODO: วนรับงานและเรียก processJob จนกว่าจะได้รับสัญญาณให้หยุด
-    }
-
+            while (true) {
+                processJob(readyQueue.take());
+                return;
+            }
+        }
     /** ทำงานหนึ่งชิ้นให้จบตามลำดับ 5 ขั้นด้านบน */
     private void processJob(Job job) throws InterruptedException {
         // TODO
-        throw new UnsupportedOperationException("TODO: Worker.processJob");
+        logger.jobStarted(job);
+        Thread.sleep(job.workMs);
+        return;
     }
 }
