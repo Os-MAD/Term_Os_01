@@ -1,5 +1,5 @@
 import java.util.List;
-
+import java.util.concurrent.atomic.AtomicInteger;
 /**
  * รวบรวมและคำนวณค่าที่ใช้วัดผลของการรันหนึ่งครั้ง
  *
@@ -18,17 +18,33 @@ import java.util.List;
 public class Statistics {
 
     // TODO: เก็บข้อมูลของงานที่เสร็จแล้ว หรือเก็บผลรวมไว้คำนวณทีหลัง
-
+    //จำนวนงานที่ทำเสร็จแล้ว
+    private final AtomicInteger completed = new AtomicInteger(0);
     /** บันทึกว่างานชิ้นหนึ่งเสร็จแล้ว เรียกโดย Worker หลายตัวพร้อมกันได้ */
-    public void recordCompletion(Job job) {
-        // TODO
-        throw new UnsupportedOperationException("TODO: Statistics.recordCompletion");
+    // จำนวนงานที่ worker กำลังทำ
+    private final AtomicInteger running = new AtomicInteger(0);
+    //เรียกตอน worker เริ่มทำ job เสร็จ
+    public void recordstart() {
+        running.incrementAndGet();
     }
+
+    public void recordCompletion(Job job) {
+        
+        running.decrementAndGet();
+        completed.incrementAndGet();    
+        
+    }
+        //Monitor ใช้ดูว่ากำลังทำกี่งาน
+        public int runningCount() {
+        return running.get();
+    }
+    
 
     /** จำนวนงานที่เสร็จแล้ว ใช้โดย Monitor และใช้ตรวจว่างานครบหรือยัง */
     public int completedCount() {
+        return completed.get();
         // TODO
-        throw new UnsupportedOperationException("TODO: Statistics.completedCount");
+    
     }
 
     /**
