@@ -56,7 +56,43 @@ public class Statistics {
      * และ Throughput อย่างน้อย 2 ตำแหน่งทศนิยม
      */
     public void printSummary(List<Job> allJobs, long makespanMs) {
-        // TODO
-        throw new UnsupportedOperationException("TODO: Statistics.printSummary");
+        long totalWaitingTime = 0;
+        long totalTurnaroundTime = 0;
+        long totalResourceWaitTime = 0;
+        int resourceJobCount = 0;
+
+        // วนลูปอ่านค่าจาก Job ทุกตัวที่อยู่ในระบบ
+        for (Job job : allJobs) {
+            totalWaitingTime += job.waitingTime;
+            totalTurnaroundTime += job.turnaroundTime;
+
+            // ค่าเฉลี่ยของ Resource Wait ให้คิดเฉพาะงานที่ใช้ resource
+            if (job.resource != ResourceType.NONE) {
+                totalResourceWaitTime += job.resourceWaitTime;
+                resourceJobCount++;
+            }
+        }
+
+        int totalJobs = allJobs.size();
+        
+        // คำนวณค่าเฉลี่ยและบังคับให้ออกมาเป็นจำนวนเต็ม (ms) ตามข้อกำหนดหัวข้อ 14
+        long avgWaitingTime = (totalJobs > 0) ? totalWaitingTime / totalJobs : 0;
+        long avgTurnaroundTime = (totalJobs > 0) ? totalTurnaroundTime / totalJobs : 0;
+        long avgResourceWaitTime = (resourceJobCount > 0) ? totalResourceWaitTime / resourceJobCount : 0;
+
+        // คำนวณ Throughput (งานต่อวินาที) = จำนวนงาน / เวลาทั้งหมดในหน่วยวินาที
+        double makespanSec = makespanMs / 1000.0;
+        double throughput = (makespanSec > 0) ? totalJobs / makespanSec : 0.0;
+
+        // แสดงผลลัพธ์
+        System.out.println("\n==================================================");
+        System.out.println("                 SUMMARY STATISTICS               ");
+        System.out.println("==================================================");
+        System.out.println("Average Waiting Time    : " + avgWaitingTime + " ms");
+        System.out.println("Average Turnaround Time : " + avgTurnaroundTime + " ms");
+        System.out.println("Average Resource Wait   : " + avgResourceWaitTime + " ms");
+        // รายงาน Throughput อย่างน้อย 2 ตำแหน่งทศนิยม
+        System.out.printf("Throughput              : %.2f jobs/second%n", throughput);
+        System.out.println("==================================================");
     }
 }
