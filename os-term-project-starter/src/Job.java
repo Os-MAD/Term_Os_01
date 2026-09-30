@@ -62,9 +62,17 @@ public class Job {
     //   3. ผลที่ได้ต้องสอดคล้องกับสมการตรวจสอบในหัวข้อ 8:
     //      Turnaround = Waiting + workMs + Resource Wait + resourceMs
     // =====================================================================
-
-    // --- ส่วนที่เพิ่มเข้ามาสำหรับเก็บเวลาเข้าสู่ระบบจริง (ใช้ volatile เพื่อความปลอดภัยเมื่ออ่านข้าม Thread) ---
-    public volatile long actualArrivalMs = -1;
+    //เวลาที่เข้าสู่ระบบจริง
+    public long actualArrivalMs = -1;
+    //เวลาที่เริ่มถูกทำโดย Worker
+    public long startMs = -1;
+    //เวลาที่ทำเสร็จ
+    public long finishMs = -1;
+    
+    //เวลาที่เริ่มรอ resource
+    public long resourceWaitStartMs = -1;
+    //เวลารอ resource รวม
+    public long resourceWaitMs = 0;
     // -------------------------------------------------------------------------------------------------------
 
     @Override
