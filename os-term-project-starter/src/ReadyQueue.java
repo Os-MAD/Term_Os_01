@@ -24,13 +24,20 @@ public class ReadyQueue {
 
     // TODO: เก็บนโยบาย (Config.Policy) และโครงสร้างข้อมูลที่ใช้เก็บงาน
     // ใช้ LinkedBlockingQueue สำหรับการทำงานแบบ FCFS (Thread-safe โดยธรรมชาติ)
+    private final Config.Policy policy;
     private final BlockingQueue<Job> queue;
 
     public ReadyQueue(Config.Policy policy) {
         // TODO
         // สร้างคิวแบบ LinkedBlockingQueue ซึ่งเป็น FIFO ตรงกับ FCFS 
         // (ละเว้นการตรวจสอบ Config.Policy ไปก่อนเนื่องจากรองรับแค่ FCFS ตามความต้องการ)
+        this.policy = policy;
         this.queue = new LinkedBlockingQueue<>();
+
+        if(policy == Config.Policy.FCFS){
+            this.queue = new LinkedBlockingQueue<>();
+            // รอสร้าง PriorityBlockingQueue -------------------------
+        }
     }
 
     /** ใส่งานเข้าคิว เรียกโดย Scheduler Thread */
