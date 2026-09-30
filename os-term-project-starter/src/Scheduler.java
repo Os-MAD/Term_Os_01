@@ -24,7 +24,7 @@ public class Scheduler extends Thread {
     // ให้เพิ่มเข้าไปให้ตรงกับที่ออกแบบไว้ใน JobGenerator
     // เพิ่ม parameter ได้ แต่อย่าเปลี่ยนชื่อคลาส
 
-    public Scheduler(BlockingQueue<Job> schedularQueue, ReadyQueue readyQueue, ProjectLogger logger) {
+    public Scheduler(BlockingQueue<Job> schedulerQueue, ReadyQueue readyQueue, ProjectLogger logger) {
         super("scheduler");
         // TODO
         this.schedulerQueue = schedulerQueue;
@@ -39,7 +39,7 @@ public class Scheduler extends Thread {
         try {
             while(true){
                 //รับ job จาก generator
-                job job = schedulerQueue.take();
+                Job job = schedulerQueue.take();
 
                 //จบแล้วให้ schedular หยุด
                 if(job == JobGenerator.POISON_PILL){
