@@ -41,15 +41,37 @@ public class Worker extends Thread {
     public void run() {
         // TODO: วนรับงานและเรียก processJob จนกว่าจะได้รับสัญญาณให้หยุด
             while (true) {
-                processJob(readyQueue.take());
-                return;
+                try {
+                    Job job = readyQueue.take();
+                    processJob(job);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
             }
         }
     /** ทำงานหนึ่งชิ้นให้จบตามลำดับ 5 ขั้นด้านบน */
     private void processJob(Job job) throws InterruptedException {
         // TODO
+        job.startMs = logger.now();
         logger.jobStarted(job);
+
         Thread.sleep(job.workMs);
-        return;
+        job.finishMs = logger.now() - job.startMs;
+        logger.workFinished(job);
+        
+        if(job.resource != ResourceType.NONE){
+            job.resourceWaitStartMs = logger.now();
+            logger.resourceWaitStarted(job);
+
+            resources.acquire(job.resource);
+            job.resourceWaitMs = logger.now() - job.resourceWaitStartMs;
+            logger.resourceAcquired(job, MAX_PRIORITY);
+
+            Thread.sleep(job.resourceMs);
+            resources.release(job.resource);
+            logger.resourceReleased(job);
+        }
+        logger.jobCompleted(job);
     }
 }
