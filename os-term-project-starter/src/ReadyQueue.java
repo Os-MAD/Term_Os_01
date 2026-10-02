@@ -1,5 +1,7 @@
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.PriorityBlockingQueue;
+import java.util.Comparator;
 
 /**
  * คิวงานที่พร้อมถูกหยิบไปทำ
@@ -32,11 +34,17 @@ public class ReadyQueue {
         // สร้างคิวแบบ LinkedBlockingQueue ซึ่งเป็น FIFO ตรงกับ FCFS 
         // (ละเว้นการตรวจสอบ Config.Policy ไปก่อนเนื่องจากรองรับแค่ FCFS ตามความต้องการ)
         this.policy = policy;
-        this.queue = new LinkedBlockingQueue<>();
-
-        if(policy == Config.Policy.FCFS){
+        if (policy == Config.Policy.FCFS) {
+            //FCFS มาก่อนได้ก่อน
             this.queue = new LinkedBlockingQueue<>();
-            // รอสร้าง PriorityBlockingQueue -------------------------
+        }else{
+            //PRIORITY เลขน้อยสำคัญกว่าๆ
+            this.queue = new PriorityBlockingQueue<>(
+                11,
+                Comparator
+                    .comparingInt((Job job) -> job.priority)
+                    .thenComparingLong(job -> job.arrivalMs)
+                    .thenComparingInt(job -> job.sequence));
         }
     }
 
