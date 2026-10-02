@@ -57,20 +57,23 @@ public class Worker extends Thread {
         logger.jobStarted(job);
 
         Thread.sleep(job.workMs);
-        job.finishMs = logger.now() - job.startMs;
+        job.finishMs = logger.now();
         logger.workFinished(job);
         
         if(job.resource != ResourceType.NONE){
             job.resourceWaitStartMs = logger.now();
             logger.resourceWaitStarted(job);
-
+ 
             resources.acquire(job.resource);
-            job.resourceWaitMs = logger.now() - job.resourceWaitStartMs;
-            logger.resourceAcquired(job, MAX_PRIORITY);
 
+            try {
+            job.resourceWaitMs = logger.now() - job.resourceWaitStartMs;
+            logger.resourceAcquired(job, job.resourceWaitMs);
             Thread.sleep(job.resourceMs);
+            } finally {
             resources.release(job.resource);
             logger.resourceReleased(job);
+            }
         }
         logger.jobCompleted(job);
     }
