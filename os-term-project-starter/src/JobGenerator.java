@@ -1,7 +1,6 @@
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
 
 /**
  * ปล่อยงานเข้าสู่ระบบตามเวลา arrivalMs ของแต่ละ Job
@@ -21,21 +20,12 @@ import java.util.concurrent.BlockingQueue;
  */
 public class JobGenerator extends Thread {
 
-    // TODO: เก็บรายการงาน, ช่องทางส่งงานไปยัง Scheduler และ logger
-    //
-    // หมายเหตุ: constructor ด้านล่างยังไม่มี parameter สำหรับ "ช่องทางส่งงาน"
-    // เพราะเป็นสิ่งที่กลุ่มต้องออกแบบเอง (หัวข้อ 2 ห้ามให้ JobGenerator
-    // ใส่งานลง ReadyQueue โดยตรง ต้องผ่าน Scheduler เสมอ)
-    // ให้เพิ่ม parameter เข้าไปตามที่ออกแบบ เช่น BlockingQueue<Job>
-    // หรือคลาสของกลุ่มเอง — เพิ่ม parameter ได้ แต่อย่าเปลี่ยนชื่อคลาส
-
     private final List<Job> jobs;
     private final ProjectLogger logger;
-    private final BlockingQueue<Job> schedulerQueue;
+    private final List<Job> schedulerQueue; // เปลี่ยนจาก BlockingQueue เป็น List ตามที่ออกแบบใหม่
 
-    public JobGenerator(List<Job> jobs, ProjectLogger logger, BlockingQueue<Job> schedulerQueue) {
+    public JobGenerator(List<Job> jobs, ProjectLogger logger, List<Job> schedulerQueue) {
         super("generator");
-        // TODO
         this.jobs = jobs;
         this.logger = logger;
         this.schedulerQueue = schedulerQueue;
@@ -46,7 +36,6 @@ public class JobGenerator extends Thread {
 
     @Override
     public void run() {
-        // TODO: วนปล่อยงานตามเวลา แล้วแจ้งเมื่อปล่อยครบ
         // ใช้ logger.now() แทนการเรียก static แบบเดิม
         long startTime = logger.now();
 
@@ -65,12 +54,18 @@ public class JobGenerator extends Thread {
                 // เรียก logger.jobArrived(job) ทุกครั้งที่ปล่อยงาน
                 logger.jobArrived(job);
 
-                // ส่งงานต่อไปยัง Scheduler ผ่าน Queue ที่ออกแบบไว้
-                schedulerQueue.put(job);
+                // วิธีเอาใส่ schedulerQueue แบบใหม่ (List + Synchronized)
+                synchronized(schedulerQueue) {
+                    schedulerQueue.add(job);
+                    schedulerQueue.notify(); // ส่งสัญญาณไปปลุก Scheduler ที่ติด wait() ให้ตื่นมารับงาน
+                }
             }
 
             // เมื่อปล่อยงานครบทุกชิ้นแล้ว ส่ง null เป็นสัญญาณ (Poison Pill) บอกว่าไม่มีงานเข้ามาอีกแล้ว
-            schedulerQueue.put(null);
+            synchronized(schedulerQueue) {
+                schedulerQueue.add(null);
+                schedulerQueue.notify(); // ปลุก Scheduler มารับค่า null เพื่อรู้ว่าจบการทำงาน
+            }
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
