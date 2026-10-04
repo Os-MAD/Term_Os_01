@@ -1,4 +1,7 @@
 import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * จุดเริ่มต้นของโปรแกรม
@@ -51,25 +54,46 @@ public class Main {
         ReadyQueue readyQueue = new ReadyQueue(config.policy);
         // TODO: สร้าง Statistics
         Statistics statistics = new Statistics();
+        //สร้างมาไว้สำหรับนับงานที่เสร็จ
+        CountDownLatch completionLatch = new CountDownLatch(jobs.size());
 
         // ---------- 4. สร้างและเริ่ม Thread ----------
         // TODO: สร้าง Worker จำนวน config.workers ตัว แล้ว start
-        Thread[] workers = new Thread[config.workers];
-        for(int i=0;i<=config.workers;i++){
-            String workerName = "Worker-" + (i + 1);
-            Worker worker = new Worker(workerName, readyQueue, resourceManager, statistics, logger);
-            Thread thread = new Thread(worker);
-            workers[i] = thread;
-            workers[i].start();
+        Thread[] worker_threads = new Thread[config.workers];
+        for(int i=0;i<config.workers;i++){
+            String worker_id = "Worker-" + (i + 1);
+            Worker worker = new Worker(worker_id, readyQueue, resourceManager, statistics, logger, completionLatch);
+            Thread worker_thread = new Thread(worker);
+            worker_threads[i] = worker_thread;
+            worker_threads[i].start();
         }
+        //สร้าง arrivalQueue (BlockingQueue)
+        BlockingQueue<Job> arrivalQueue = new ArrayBlockingQueue<>(1);
+
         // TODO: สร้างและ start Scheduler
+        Scheduler scheduler = new Scheduler(arrivalQueue, readyQueue, logger);
+        Thread scheduler_thread = new Thread(scheduler);
+        scheduler_thread.start();
         // TODO: สร้างและ start Monitor
+        Monitor monitor = new Monitor(readyQueue, resourceManager, statistics, logger);
+        Thread monitor_thread = new Thread(monitor);
+        monitor_thread.start();
         // TODO: สร้างและ start JobGenerator
+        JobGenerator jobGenerator = new JobGenerator(jobs, logger,arrivalQueue);
+        Thread jobGenerator_thread = new Thread(jobGenerator);
+        jobGenerator_thread.start();
         //
         // ลำดับการ start มีผลหรือไม่ ให้คิดและอธิบายได้ใน Demo
 
         // ---------- 5. รอจนงานเสร็จครบ ----------
         // TODO: รอจนกว่างานทั้ง jobs.size() ชิ้นจะเสร็จ
+        try {
+            completionLatch.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        
+
         //
         // *** นี่คือจุดที่ยากที่สุดของโครงงานนี้ ***
         // Worker ที่กำลังรออยู่ในคิวไม่มีทางรู้ได้เองว่าจะไม่มีงานเข้ามาอีกแล้ว
@@ -87,11 +111,30 @@ public class Main {
 
         // ---------- 6. สั่งหยุดทุก Thread ----------
         // TODO: หยุด Worker ทุกตัว, Scheduler, Monitor และ JobGenerator
+        for (Thread worker_thread : worker_threads) {
+            worker_thread.interrupt();
+        }
+        scheduler_thread.interrupt();
+        monitor_thread.interrupt();
+        jobGenerator_thread.interrupt();
         // TODO: join ทุก Thread เพื่อยืนยันว่าหยุดจริงก่อนไปขั้นถัดไป
+        try {
+            for (Thread worker_thread : worker_threads) {
+                worker_thread.join();
+            }
+            scheduler_thread.join();
+            monitor_thread.join();
+            jobGenerator_thread.join();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
 
         // ---------- 7. สรุปผล ----------
         // TODO: หา makespan = เวลาที่งานชิ้นสุดท้ายเสร็จ (ใช้ logger.now())
+        long makespanMs = logger.now();
         // TODO: เรียก statistics.printSummary(jobs, makespanMs)
+        statistics.printSummary(jobs, makespanMs);
         // TODO: logger.systemStop(completed, jobs.size())
+        logger.systemStop(statistics.completedCount(), jobs.size());
     }
 }
