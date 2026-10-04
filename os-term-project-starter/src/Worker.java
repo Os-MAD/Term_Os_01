@@ -1,3 +1,4 @@
+import java.util.concurrent.CountDownLatch;
 /**
  * Thread ที่ดึงงานจาก Ready Queue ไปทำจนเสร็จ
  *
@@ -25,16 +26,17 @@ public class Worker extends Thread {
     ResourceManager resources;
     Statistics statistics;
     ProjectLogger logger;
+    CountDownLatch completionLatch;
 
     public Worker(String name, ReadyQueue readyQueue, ResourceManager resources,
-                  Statistics statistics, ProjectLogger logger) {
+                  Statistics statistics, ProjectLogger logger, CountDownLatch completionLatch) {
         super(name);
         // TODO
-        this.name = name;
         this.readyQueue = readyQueue;
         this.resources = resources;
         this.statistics = statistics;
         this.logger = logger;
+        this.completionLatch = completionLatch;
     }
 
     @Override
@@ -55,6 +57,7 @@ public class Worker extends Thread {
         // TODO
         job.startMs = logger.now();
         logger.jobStarted(job);
+        statistics.recordstart();
 
         Thread.sleep(job.workMs);
         job.finishMs = logger.now();
@@ -76,5 +79,7 @@ public class Worker extends Thread {
             }
         }
         logger.jobCompleted(job);
+        statistics.recordCompletion(job);
+        completionLatch.countDown();
     }
 }
