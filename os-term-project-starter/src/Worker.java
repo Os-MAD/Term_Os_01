@@ -74,8 +74,8 @@ public class Worker extends Thread {
             logger.resourceAcquired(job, job.resourceWaitMs);
             Thread.sleep(job.resourceMs);
             } finally {
-            resources.release(job.resource);
             logger.resourceReleased(job);
+            resources.release(job.resource);
             }
         }
         logger.jobCompleted(job);
