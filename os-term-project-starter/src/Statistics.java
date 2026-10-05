@@ -63,12 +63,12 @@ public class Statistics {
 
         // วนลูปอ่านค่าจาก Job ทุกตัวที่อยู่ในระบบ
         for (Job job : allJobs) {
-            totalWaitingTime += job.waitingTime;
-            totalTurnaroundTime += job.turnaroundTime;
+            totalWaitingTime += job.startMs - job.startMs;
+            totalTurnaroundTime += 1;
 
             // ค่าเฉลี่ยของ Resource Wait ให้คิดเฉพาะงานที่ใช้ resource
             if (job.resource != ResourceType.NONE) {
-                totalResourceWaitTime += job.resourceWaitTime;
+                totalResourceWaitTime += job.resourceWaitMs;
                 resourceJobCount++;
             }
         }
