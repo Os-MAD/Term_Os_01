@@ -1,5 +1,4 @@
-import java.util.List;
-
+import java.util.concurrent.BlockingQueue;
 /**
  * รับงานจาก JobGenerator แล้วจัดเข้า Ready Queue
  *
@@ -15,8 +14,7 @@ import java.util.List;
  */
 public class Scheduler extends Thread {
 
-    // เปลี่ยนจาก BlockingQueue เป็น List
-    private final List<Job> schedulerQueue;
+    private final BlockingQueue<Job> schedulerQueue;
     private final ReadyQueue readyQueue;
     private final ProjectLogger logger;
 
@@ -26,7 +24,7 @@ public class Scheduler extends Thread {
     // ให้เพิ่มเข้าไปให้ตรงกับที่ออกแบบไว้ใน JobGenerator
     // เพิ่ม parameter ได้ แต่อย่าเปลี่ยนชื่อคลาส
 
-    public Scheduler(List<Job> schedulerQueue, ReadyQueue readyQueue, ProjectLogger logger) {
+    public Scheduler(BlockingQueue<Job> schedulerQueue, ReadyQueue readyQueue, ProjectLogger logger) {
         super("scheduler");
         // TODO
         this.schedulerQueue = schedulerQueue;
@@ -40,26 +38,9 @@ public class Scheduler extends Thread {
         // TODO: วนรับงานเข้ามาแล้วใส่ ReadyQueue จนกว่าจะได้รับสัญญาณให้หยุด
         try {
             while(true){
-                Job job = null;
-
-                // 1. จำเป็นต้องทำการล็อค (Lock) List ก่อนใช้งานทุกครั้งเมื่อทำงานแบบ Multi-threading
-                synchronized (schedulerQueue) {
-                    // 2. ใช้ while เพื่อเช็คว่า List ว่างหรือไม่ (ป้องกัน Spurious wakeup)
-                    while (schedulerQueue.isEmpty()) {
-                        // 3. สั่งให้ Thread นี้หยุดพักการทำงาน (Release lock และรอโดยไม่กิน CPU) 
-                        // จนกว่า JobGenerator จะเรียก schedulerQueue.notify()
-                        schedulerQueue.wait(); 
-                    }
-                    // 4. เมื่อหลุดจาก wait() แสดงว่ามีงานเข้ามาแล้ว ให้ดึงงานตัวแรกออก (ลบตำแหน่งที่ 0)
-                    job = schedulerQueue.remove(0);
-                }
-
-                // จบแล้วให้ schedular หยุด
-                if(job == JobGenerator.POISON_PILL){
-                    break;
-                }
-
-                // ส่ง job เข้า Rdy queue
+                //รับ job จาก jobgenerator
+                Job job = schedulerQueue.take();
+                //ส่ง job เข้า Ready queue
                 readyQueue.add(job);
             }
 
