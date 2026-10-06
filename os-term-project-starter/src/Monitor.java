@@ -18,24 +18,15 @@
  */
 public class Monitor extends Thread {
 
-    // TODO: เก็บสิ่งที่ต้องอ่านสถานะ และ logger
-    //
-    // หมายเหตุ: constructor ด้านล่างยังไม่มีทางเข้าถึงตัวนับ running
-    // เพราะยังไม่มีการตัดสินว่าตัวนับนั้นควรอยู่ที่ไหน ให้เพิ่ม parameter
-    // เข้าไปเองเมื่อออกแบบเสร็จ
+    // เก็บสิ่งที่ต้องอ่านสถานะ และ logger
     private final ReadyQueue readyQueue;
     private final ResourceManager resources;
     private final Statistics statistics;
     private final ProjectLogger logger;
 
-
-    // ใช้เป็นสัญญาณให้ Monitor หยุด 
-    private volatile boolean running = true;
-
     public Monitor(ReadyQueue readyQueue, ResourceManager resources,
                    Statistics statistics, ProjectLogger logger) {
         super("monitor");
-        // TODO
         this.readyQueue = readyQueue;
         this.resources = resources;
         this.statistics = statistics;
@@ -44,25 +35,30 @@ public class Monitor extends Thread {
 
     @Override
     public void run() {
-        // TODO: วนรายงานสถานะทุก ~1000 ms จนกว่าจะได้รับสัญญาณให้หยุด
-        while (running) {
-            try {
-                // อ่านจำนวน Job ใน ready queue
-                 int ready = readyQueue.size();
-                // อ่านจำนวน worker ที่กำลังทำงาน
-                 int runningJobs = 0;
-                // อ่านจำนวนJob ที่ทำเสร็จแล้ว
-                 int completed = 0;
-                 // ส่งข้แมูลให้ logger
-                 Thread.sleep(1000);
-            }catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
+        // วนรายงานสถานะทุก ~1000 ms จนกว่าจะได้รับสัญญาณให้หยุด
+        try {
+            while (!Thread.currentThread().isInterrupted()) {
+                
+                // 1. จำนวนงานที่พร้อมในคิว
+                int ready = readyQueue.size();
+                
+                // 2. จำนวนงานที่ Worker กำลังทำ (เรียกจาก Statistics ที่คุณเขียนไว้)
+                int running = statistics.runningCount();
+                
+                // 3. จำนวนงานที่ทำเสร็จแล้ว
+                int completed = statistics.completedCount();
+                
+                // 4. สถานะการใช้ทรัพยากร
+                String resStatus = resources.status();
+
+                // พิมพ์รายงาน
+                logger.monitor(ready, running, completed, resStatus);
+
+                // พัก Thread ประมาณ 1 วินาที
+                Thread.sleep(1000);
             }
-    }
-}
-    public void shutdown(){
-        running = false;
-        interrupt();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt(); // หากถูกขัดจังหวะ ให้ออกจากลูป
+        }
     }
 }
