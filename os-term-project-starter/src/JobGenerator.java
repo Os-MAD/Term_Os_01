@@ -64,9 +64,6 @@ public class JobGenerator extends Thread {
                 schedulerQueue.put(job);
             }
 
-            // เมื่อปล่อยงานครบทุกชิ้นแล้ว ส่ง null เป็นสัญญาณ (Poison Pill) บอกว่าไม่มีงานเข้ามาอีกแล้ว
-            schedulerQueue.put(null);
-
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
