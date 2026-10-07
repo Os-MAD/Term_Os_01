@@ -55,12 +55,12 @@ public class Worker extends Thread {
     /** ทำงานหนึ่งชิ้นให้จบตามลำดับ 5 ขั้นด้านบน */
     private void processJob(Job job) throws InterruptedException {
         // TODO
+        statistics.recordStart();
         job.startMs = logger.now();
         logger.jobStarted(job);
-        statistics.recordstart();
 
-        Thread.sleep(job.workMs);
         job.finishMs = logger.now();
+        Thread.sleep(job.workMs);
         logger.workFinished(job);
         
         if(job.resource != ResourceType.NONE){
@@ -78,8 +78,8 @@ public class Worker extends Thread {
             resources.release(job.resource);
             }
         }
-        logger.jobCompleted(job);
         statistics.recordCompletion(job);
         completionLatch.countDown();
+        logger.jobCompleted(job);
     }
 }
