@@ -18,33 +18,48 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class Statistics {
 
     // TODO: เก็บข้อมูลของงานที่เสร็จแล้ว หรือเก็บผลรวมไว้คำนวณทีหลัง
-    //จำนวนงานที่ทำเสร็จแล้ว
-    private final AtomicInteger completed = new AtomicInteger(0);
-    /** บันทึกว่างานชิ้นหนึ่งเสร็จแล้ว เรียกโดย Worker หลายตัวพร้อมกันได้ */
-    // จำนวนงานที่ worker กำลังทำ
-    private final AtomicInteger running = new AtomicInteger(0);
+
+    private int completed = 0;
+    private int running = 0;
+
+    private long totalWaitingTime = 0;
+    private long totalTurnaroundTime = 0;
+    private long totalResourceWaitTime = 0;
+    private int resourceJobCount = 0;
     //เรียกตอน worker เริ่มทำ job เสร็จ
-    public void recordstart() {
-        running.incrementAndGet();
+    public synchronized void recordStart() {
+        running++;
     }
 
-    public void recordCompletion(Job job) {
-        /// อย่าลืมใช้ SYNCHROZATION ไม่งั้นจะเกิด RACE CONDITIONNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
-        running.decrementAndGet();
-        completed.incrementAndGet();    
-        
-    }
-        //Monitor ใช้ดูว่ากำลังทำกี่งาน
-        public int runningCount() {
-        return running.get();
-    }
-    
+    public synchronized void recordCompletion(Job job) {
+        long waitingTime = job.startMs - job.actualArrivalMs;
 
-    /** จำนวนงานที่เสร็จแล้ว ใช้โดย Monitor และใช้ตรวจว่างานครบหรือยัง */
-    public int completedCount() {
-        return completed.get();
-        // TODO
-    
+        long resourceWaitTime = 0;
+        long resourceTime = 0;
+
+        if (job.resource != ResourceType.NONE) {
+            resourceWaitTime = job.resourceWaitMs;
+            resourceTime = job.resourceMs;
+            resourceJobCount++;
+        }
+
+        long turnaroundTime = waitingTime + job.workMs + resourceWaitTime + resourceTime;
+
+        totalWaitingTime += waitingTime;
+        totalTurnaroundTime += turnaroundTime;
+        totalResourceWaitTime += resourceWaitTime;
+
+        running--;
+        completed++;
+    }
+
+    //Monitor ใช้ดูว่ากำลังทำกี่งาน
+    public synchronized int runningCount() {
+        return running;
+    }
+
+    public synchronized int completedCount() {
+        return completed;
     }
 
     /**
@@ -56,51 +71,20 @@ public class Statistics {
      * และ Throughput อย่างน้อย 2 ตำแหน่งทศนิยม
      */
     public void printSummary(List<Job> allJobs, long makespanMs) {
-        long totalWaitingTime = 0;
-        long totalTurnaroundTime = 0;
-        long totalResourceWaitTime = 0;
-        int resourceJobCount = 0;
-
-        // วนลูปอ่านค่าจาก Job ทุกตัวที่อยู่ในระบบ
-        for (Job job : allJobs) {
-             long waitingTime =
-                    job.startMs - job.actualArrivalMs;
-                long resourceWaitTime = 0;
-
-            // ค่าเฉลี่ยของ Resource Wait ให้คิดเฉพาะงานที่ใช้ resource
-            if (job.resource != ResourceType.NONE) {
-                resourceWaitTime = job.resourceWaitMs;
-
-                totalResourceWaitTime += resourceWaitTime;
-                resourceJobCount++;
-            }
-            long turnaroundTime =
-        job.finishMs - job.actualArrivalMs;
-
-            // เก็บผลรวมเพื่อนำไปหา Average
-            totalWaitingTime += waitingTime;
-            totalTurnaroundTime += turnaroundTime;
-        }
 
         int totalJobs = allJobs.size();
-        
-        // คำนวณค่าเฉลี่ยและบังคับให้ออกมาเป็นจำนวนเต็ม (ms) ตามข้อกำหนดหัวข้อ 14
         long avgWaitingTime = (totalJobs > 0) ? totalWaitingTime / totalJobs : 0;
         long avgTurnaroundTime = (totalJobs > 0) ? totalTurnaroundTime / totalJobs : 0;
         long avgResourceWaitTime = (resourceJobCount > 0) ? totalResourceWaitTime / resourceJobCount : 0;
-
-        // คำนวณ Throughput (งานต่อวินาที) = จำนวนงาน / เวลาทั้งหมดในหน่วยวินาที
         double makespanSec = makespanMs / 1000.0;
-        double throughput = (makespanSec > 0) ? totalJobs / makespanSec : 0.0;
+        double throughput =(makespanSec > 0) ? totalJobs / makespanSec : 0.0;
 
-        // แสดงผลลัพธ์
         System.out.println("\n==================================================");
         System.out.println("                 SUMMARY STATISTICS               ");
         System.out.println("==================================================");
         System.out.println("Average Waiting Time    : " + avgWaitingTime + " ms");
         System.out.println("Average Turnaround Time : " + avgTurnaroundTime + " ms");
         System.out.println("Average Resource Wait   : " + avgResourceWaitTime + " ms");
-        // รายงาน Throughput อย่างน้อย 2 ตำแหน่งทศนิยม
         System.out.printf("Throughput              : %.2f jobs/second%n", throughput);
         System.out.println("==================================================");
     }
