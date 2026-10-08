@@ -59,8 +59,8 @@ public class Worker extends Thread {
         job.startMs = logger.now();
         logger.jobStarted(job);
 
-        job.finishMs = logger.now();
         Thread.sleep(job.workMs);
+        job.finishMs = logger.now();
         logger.workFinished(job);
         
         if(job.resource != ResourceType.NONE){
