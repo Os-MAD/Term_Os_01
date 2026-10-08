@@ -43,6 +43,9 @@ public class Job {
         this.resource = resource;
         this.resourceMs = resourceMs;
         this.sequence = sequence;
+        
+        // กำหนดค่าเริ่มต้นของ priority ที่ถูกปรับ ให้เท่ากับ priority ดั้งเดิมตอนไฟล์โหลดเข้า
+        this.adjustedPriority = priority;
     }
 
     // =====================================================================
@@ -74,6 +77,12 @@ public class Job {
     //เวลารอ resource รวม
     public long resourceWaitMs = 0;
     // -------------------------------------------------------------------------------------------------------
+
+    // เวลาที่ถูก Scheduler จัดเข้า Ready Queue
+    public long readyQueueEntryMs = -1;
+    
+    // ค่าลำดับความสำคัญที่ถูกปรับ (ตัวแทนของ priority ที่สามารถแก้ไขค่าได้ เช่น นำไปใช้ทำโบนัส Aging)
+    public int adjustedPriority;
 
     @Override
     public String toString() {
