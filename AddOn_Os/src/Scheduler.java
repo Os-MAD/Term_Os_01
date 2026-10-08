@@ -41,9 +41,6 @@ public class Scheduler extends Thread {
                 //รับ job จาก jobgenerator
                 Job job = schedulerQueue.take();
 
-                // (หากมีเงื่อนไขตรวจสอบงานชิ้นสุดท้ายเพื่อหยุดระบบ ให้แทรกตรงนี้)
-                if (job == null) break; 
-
                 // ------------------------------------------------------------
                 // ส่วนที่เพิ่มใหม่: บันทึกเวลาเข้า Ready Queue ก่อนที่จะส่งเข้าคิว
                 job.readyQueueEntryMs = logger.now();
