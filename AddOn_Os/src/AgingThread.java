@@ -1,4 +1,3 @@
-
 public class AgingThread extends Thread {
 
     private final ReadyQueue readyQueue;
@@ -20,16 +19,12 @@ public class AgingThread extends Thread {
 
     @Override
     public void run() {
-        while (!isInterrupted()) {
+        while (true) {
             try {
                 Thread.sleep(agingIntervalMs);
-
-                readyQueue.applyAging();
-
-                logger.systemEvent("AGING applied");
-
+                readyQueue.applyAging(agingIntervalMs);
             } catch (InterruptedException e) {
-                interrupt();
+                Thread.currentThread().interrupt();
                 break;
             }
         }
