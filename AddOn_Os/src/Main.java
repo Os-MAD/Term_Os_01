@@ -51,9 +51,15 @@ public class Main {
         // TODO: สร้าง ResourceManager จากจำนวน permit ใน config
         ResourceManager resourceManager = new ResourceManager(config.printerPermits,config.databasePermits);
         // TODO: สร้าง ReadyQueue ตามนโยบายใน config
-        ReadyQueue readyQueue = new ReadyQueue(config.policy);
+        ReadyQueue readyQueue;
+        if (config.policy != Config.Policy.PRIORITY) {
+            readyQueue = new ReadyQueue(config.policy);
+        }else{
+            readyQueue = new ReadyQueue(config.policy, logger);
+        }
         // TODO: สร้าง Statistics
         Statistics statistics = new Statistics();
+
         //สร้างมาไว้สำหรับนับงานที่เสร็จ
         CountDownLatch completionLatch = new CountDownLatch(jobs.size());
 
@@ -82,6 +88,20 @@ public class Main {
         JobGenerator jobGenerator = new JobGenerator(jobs, logger,arrivalQueue);
         Thread jobGenerator_thread = new Thread(jobGenerator);
         jobGenerator_thread.start();
+        // Addon สร้าง aging และ start
+        AgingThread agingThread = new AgingThread(readyQueue, logger, 1000);
+        Thread aging_thread = new Thread(agingThread);
+        aging_thread.start();
+
+        //เผื่อ policy ไม่ใช่แบบ PRIORITY จะได้ไม่ใช้ aging
+        if (config.policy != Config.Policy.PRIORITY) {
+            aging_thread.interrupt();
+            try{
+                aging_thread.join();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
         //
         // ลำดับการ start มีผลหรือไม่ ให้คิดและอธิบายได้ใน Demo
 
@@ -117,6 +137,9 @@ public class Main {
         scheduler_thread.interrupt();
         monitor_thread.interrupt();
         jobGenerator_thread.interrupt();
+        if (config.policy == Config.Policy.PRIORITY) {
+            aging_thread.interrupt();
+        }
         // TODO: join ทุก Thread เพื่อยืนยันว่าหยุดจริงก่อนไปขั้นถัดไป
         try {
             for (Thread worker_thread : worker_threads) {
@@ -125,6 +148,9 @@ public class Main {
             scheduler_thread.join();
             monitor_thread.join();
             jobGenerator_thread.join();
+            if (config.policy == Config.Policy.PRIORITY) {
+                aging_thread.join();
+            }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
