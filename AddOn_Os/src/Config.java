@@ -11,19 +11,20 @@
 public final class Config {
 
     public static final String USAGE =
-            "Usage: java Main <workload.csv> <fcfs|priority> <workers> <printerPermits> <databasePermits>\n"
-          + "  workload.csv      ไฟล์ชุดงานทดสอบ\n"
-          + "  fcfs | priority   นโยบายการจัดลำดับงาน\n"
-          + "  workers           จำนวน Worker Thread (ตั้งแต่ 1 ขึ้นไป)\n"
-          + "  printerPermits    จำนวนสิทธิ์ใช้ PRINTER พร้อมกัน (ตั้งแต่ 1 ขึ้นไป)\n"
-          + "  databasePermits   จำนวนสิทธิ์ใช้ DATABASE พร้อมกัน (ตั้งแต่ 1 ขึ้นไป)\n"
+            "Usage: java Main <workload.csv> <fcfs|priority|mlfq> <workers> <printerPermits> <databasePermits>\n"
+          + "  workload.csv             ไฟล์ชุดงานทดสอบ\n"
+          + "  fcfs | priority | mlfq   นโยบายการจัดลำดับงาน\n"
+          + "  workers                  จำนวน Worker Thread (ตั้งแต่ 1 ขึ้นไป)\n"
+          + "  printerPermits           จำนวนสิทธิ์ใช้ PRINTER พร้อมกัน (ตั้งแต่ 1 ขึ้นไป)\n"
+          + "  databasePermits          จำนวนสิทธิ์ใช้ DATABASE พร้อมกัน (ตั้งแต่ 1 ขึ้นไป)\n"
           + "\n"
-          + "ตัวอย่าง: java Main jobs_standard.csv priority 3 1 2";
+          + "ตัวอย่าง: java Main jobs_standard.csv mlfq 3 1 2";
 
     /** นโยบายการจัดลำดับงาน */
     public enum Policy {
         FCFS,
-        PRIORITY
+        PRIORITY,
+        MLFQ
     }
 
     public final String workloadPath;
@@ -64,9 +65,11 @@ public final class Config {
             policy = Policy.FCFS;
         } else if (policyText.equals("priority")) {
             policy = Policy.PRIORITY;
+        } else if (policyText.equals("mlfq")) {
+            policy = Policy.MLFQ;
         } else {
             throw new IllegalArgumentException(
-                    "นโยบายต้องเป็น fcfs หรือ priority เท่านั้น แต่พบ \"" + args[1].trim() + "\"");
+                    "นโยบายต้องเป็น fcfs, priority หรือ mlfq เท่านั้น แต่พบ \"" + args[1].trim() + "\"");
         }
 
         int workers = parseAtLeastOne(args[2], "workers");
