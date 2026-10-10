@@ -42,44 +42,98 @@ public class Worker extends Thread {
     @Override
     public void run() {
         // TODO: วนรับงานและเรียก processJob จนกว่าจะได้รับสัญญาณให้หยุด
-            while (true) {
-                try {
-                    Job job = readyQueue.take();
-                    processJob(job);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    break;
-                }
+        while (!Thread.currentThread().isInterrupted()) {
+            try {
+                Job job = readyQueue.take();
+                processJob(job);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
             }
         }
+    }
+
     /** ทำงานหนึ่งชิ้นให้จบตามลำดับ 5 ขั้นด้านบน */
     private void processJob(Job job) throws InterruptedException {
         // TODO
-        statistics.recordStart();
-        job.startMs = logger.now();
-        logger.jobStarted(job);
+        // startMs เป็นเวลาเริ่มครั้งแรกเท่านั้น ห้ามเขียนทับตอน Job กลับจาก requeue
+        if (job.startMs < 0) {
+            job.startMs = logger.now();
+            logger.jobStarted(job);
+        }
 
-        Thread.sleep(job.workMs);
-        job.finishMs = logger.now();
-        logger.workFinished(job);
+        // นับ Worker ที่กำลังประมวลผลทุกครั้งที่หยิบ Job (รวมการกลับจาก requeue)
+        statistics.recordstart();
+        boolean runningCountHandled = false;
+
+        try {
+            if (readyQueue.isMlfq()) {
+                // MLFQ: ทำงานได้ไม่เกิน Quantum ของคิวปัจจุบัน
+                long quantumMs = readyQueue.getQuantum(job.queueLevel);
+                if (quantumMs <= 0) {
+                    throw new IllegalStateException("MLFQ quantum must be positive");
+                }
+
+                long runMs = Math.min(job.remainingWorkMs, quantumMs);
+                if (runMs > 0) {
+                    Thread.sleep(runMs);
+                }
+                job.remainingWorkMs -= runMs;
+
+                logger.systemEvent("MLFQ_SLICE job=" + job.id
+                        + " queue=Q" + job.queueLevel
+                        + " ran=" + runMs + "ms"
+                        + " remaining=" + job.remainingWorkMs + "ms");
+
+                // ยังทำงานหลักไม่เสร็จ: ลดระดับคิว แล้วคืน Job ให้ ReadyQueue
+                if (job.remainingWorkMs > 0) {
+                    job.queueLevel = Math.min(job.queueLevel + 1, 2); // Q0 -> Q1 -> Q2
+
+                    // Job นี้ไม่อยู่ระหว่างประมวลผลแล้ว แต่ยังไม่ Completed
+                    statistics.recordYield();
+                    runningCountHandled = true;
+
+                    logger.systemEvent("MLFQ_REQUEUE job=" + job.id
+                            + " next=Q" + job.queueLevel
+                            + " remaining=" + job.remainingWorkMs + "ms");
+                    readyQueue.requeue(job);
+                    return;
+                }
+            } else {
+                // FCFS / Priority: ทำงานหลักจนเสร็จตามเดิม
+                Thread.sleep(job.workMs);
+            }
+
         
-        if(job.resource != ResourceType.NONE){
-            job.resourceWaitStartMs = logger.now();
-            logger.resourceWaitStarted(job);
- 
-            resources.acquire(job.resource);
+            logger.workFinished(job);
 
-            try {
-            job.resourceWaitMs = logger.now() - job.resourceWaitStartMs;
-            logger.resourceAcquired(job, job.resourceWaitMs);
-            Thread.sleep(job.resourceMs);
-            } finally {
-            logger.resourceReleased(job);
-            resources.release(job.resource);
+            if (job.resource != ResourceType.NONE) {
+                job.resourceWaitStartMs = logger.now();
+                logger.resourceWaitStarted(job);
+
+                resources.acquire(job.resource);
+                try {
+                    job.resourceWaitMs = logger.now() - job.resourceWaitStartMs;
+                    logger.resourceAcquired(job, job.resourceWaitMs);
+                    Thread.sleep(job.resourceMs);
+                } finally {
+                    resources.release(job.resource);
+                    logger.resourceReleased(job);
+                }
+            }
+
+            // finishMs ต้องบันทึกหลังใช้ Resource เสร็จ ไม่ใช่หลัง CPU burstๆ
+            job.finishMs = logger.now();
+            logger.jobCompleted(job);
+            statistics.recordCompletion(job);
+            runningCountHandled = true;
+            completionLatch.countDown(); // นับเพียงครั้งเดียวต่อ Job ที่เสร็จจริง
+
+        } finally {
+            // ป้องกัน running ค้าง ถ้า Thread ถูก interrupt ระหว่างทำงาน
+            if (!runningCountHandled) {
+                statistics.recordYield();
             }
         }
-        statistics.recordCompletion(job);
-        completionLatch.countDown();
-        logger.jobCompleted(job);
     }
 }
