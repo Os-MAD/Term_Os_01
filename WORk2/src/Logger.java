@@ -43,8 +43,12 @@ public final class Logger {
 
     private static void write(String level, String message, Throwable error) {
         String timestamp = LocalDateTime.now().format(TIME_FORMAT);
+        String threadName = Thread.currentThread().getName();
+        if (threadName == null || threadName.isBlank()) {
+            threadName = "virtual-thread-" + Thread.currentThread().threadId();
+        }
         String line = String.format("[%s] [+%d ms] [%s] [%s] %s",
-                timestamp, elapsedMs(), level, Thread.currentThread().getName(), message);
+                timestamp, elapsedMs(), level, threadName, message);
 
         // แสดงบนหน้าจอด้วย เพื่อให้เห็น log ขณะรัน Server
         if ("ERROR".equals(level)) {
