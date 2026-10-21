@@ -13,6 +13,8 @@ java Main ../workloads/jobs_standard.csv priority 3 1 2 > ../logs/Jobs_log.log
 
 [ชื่อไฟล์ jobs ใน workloads แบบ.csv] [รูปแบบ โดยจะมี FCFS หรือ priority] [จำนวน worker] [จำนวน printer] [จำนวน resourse]
 
+---
+
 # วิธีรัน OS_Term_Project_02
 เปิดไฟล์ OS_Term_Project_02 ใน Visual Studio Code
 
