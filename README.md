@@ -1,5 +1,5 @@
 # วิธีรัน OS_Term_Project_01
-เปิดไฟล์ os-term-project-01 ใน Visual Studio Code
+เปิดไฟล์ OS_Term_Project_01 ใน Visual Studio Code
 
 แล้วเปิด terminal ใน Visual Studio Code
 
