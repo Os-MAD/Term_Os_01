@@ -1,5 +1,5 @@
 # วิธีรัน OS_Term_Project_01
-เปิดไฟล์ OS_Term_Project_01 ใน Visual Studio Code
+เปิดไฟล์ os-term-project-starter ใน Visual Studio Code
 
 แล้วเปิด terminal ใน Visual Studio Code
 
@@ -16,7 +16,7 @@ java Main ../workloads/jobs_standard.csv priority 3 1 2 > ../logs/Jobs_log.log
 ---
 
 # วิธีรัน OS_Term_Project_02
-เปิดไฟล์ OS_Term_Project_02 ใน Visual Studio Code
+เปิดไฟล์ WORk2 ใน Visual Studio Code
 
 ### เริ่มเปิด Server
 เปิด terminal ใน Visual Studio Code ไว้สำหรับเปิดรัน Server แล้วพิมพ์คำสั่งใน terminal
