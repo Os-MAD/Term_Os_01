@@ -1,3 +1,4 @@
 # Term_Os_01
-First Term Os Bro!  not 2 !!
-d test
+วิธีรัน เปิดไฟล์ os-term-project-starter
+cd src
+javac *.java
