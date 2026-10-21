@@ -1,7 +1,7 @@
 # Term_Os_01
 วิธีรัน เปิดไฟล์ os-term-project-starter
 
-## 2. ลองรันดูก่อน
+#แล้วเปิด terminal ใน Visual Studio Code
 
 ```bash
 cd src
