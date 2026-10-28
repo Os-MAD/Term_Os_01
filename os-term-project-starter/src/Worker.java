@@ -79,7 +79,7 @@ public class Worker extends Thread {
             }
         }
         statistics.recordCompletion(job);
-        completionLatch.countDown();
         logger.jobCompleted(job);
+        completionLatch.countDown();
     }
 }
