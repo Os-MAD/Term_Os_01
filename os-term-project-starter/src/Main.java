@@ -71,7 +71,7 @@ public class Main {
         BlockingQueue<Job> arrivalQueue = new ArrayBlockingQueue<>(1);
 
         // TODO: สร้างและ start Scheduler
-        Scheduler scheduler = new Scheduler(arrivalQueue, readyQueue, logger);
+        Scheduler scheduler = new Scheduler(arrivalQueue, readyQueue);
         Thread scheduler_thread = new Thread(scheduler);
         scheduler_thread.start();
         // TODO: สร้างและ start Monitor
